@@ -28,7 +28,10 @@ exports.getProductsById = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
     try {
-        const {nameProduct, jenisProduct, fotoProduct} = req.body;
+        const {nameProduct, jenisProduct, } = req.body;
+        const file = req.file;
+        const fotoProduct = file? '/uploads/' + file.filename:null;
+        console.log(fotoProduct,nameProduct,jenisProduct);
 
         const product = await prisma.product.create({
             data: {nameProduct, jenisProduct, fotoProduct}

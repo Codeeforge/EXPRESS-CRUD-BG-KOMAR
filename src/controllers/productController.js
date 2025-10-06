@@ -1,7 +1,9 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const fs = require('fs');
+const path = require('path');
 
-// ✅ GET all products
+
 exports.getProducts = async (req, res) => {
   try {
     const products = await prisma.product.findMany();
@@ -12,7 +14,7 @@ exports.getProducts = async (req, res) => {
   }
 };
 
-// ✅ GET by ID
+
 exports.getProductsById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -28,7 +30,7 @@ exports.getProductsById = async (req, res) => {
   }
 };
 
-// ✅ CREATE product
+
 exports.createProduct = async (req, res) => {
   try {
     const { nameProduct, jenisProduct } = req.body;
@@ -46,7 +48,7 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// ✏️ UPDATE product
+
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -72,23 +74,40 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
-// ❌ DELETE product
+
 exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Cek apakah produk ada
     const product = await prisma.product.findUnique({
       where: { id: Number(id) },
     });
-    if (!product) return res.status(404).json({ error: 'Product not found' });
 
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    // Hapus record dari database
     await prisma.product.delete({
       where: { id: Number(id) },
     });
 
-    res.json({ message: 'Product deleted successfully' });
+    // Kalau produk punya foto, hapus juga dari folder uploads
+    if (product.fotoProduct) {
+      const filePath = path.join(__dirname, '..', product.fotoProduct);
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.warn('⚠️ Gagal hapus file (mungkin sudah tidak ada):', err.message);
+        } else {
+          console.log('🗑️ File foto dihapus:', filePath);
+        }
+      });
+    }
+
+    res.json({ message: 'Product deleted successfully (file + DB)' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to delete product' });
   }
 };
-
